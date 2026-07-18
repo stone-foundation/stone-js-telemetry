@@ -9,3 +9,7 @@
 ## Classes
 
 - [TelemetryMiddleware](classes/TelemetryMiddleware.md)
+
+## Variables
+
+- [SERVER\_ERROR\_STATUS](variables/SERVER_ERROR_STATUS.md)
