@@ -33,6 +33,27 @@ describe('TelemetryMiddleware', () => {
     expect(telemetry.counter).toHaveBeenCalledWith('stone.events.total', 1, { status: 'ok' })
   })
 
+  it('marks a 5xx response as an error (OpenTelemetry server-span convention)', async () => {
+    const telemetry = makeTelemetry()
+    const mw = new TelemetryMiddleware({ telemetry })
+    const next = vi.fn(async () => ({ statusCode: 500 }))
+    const res = await mw.handle(event, next as any)
+    expect(res).toEqual({ statusCode: 500 })
+    expect(telemetry.span.setAttribute).toHaveBeenCalledWith('statusCode', 500)
+    expect(telemetry.span.end).toHaveBeenCalledWith('error')
+    expect(telemetry.counter).toHaveBeenCalledWith('stone.events.total', 1, { status: 'error' })
+  })
+
+  it('leaves a 4xx response as ok (client error, not a server failure)', async () => {
+    const telemetry = makeTelemetry()
+    const mw = new TelemetryMiddleware({ telemetry })
+    const next = vi.fn(async () => ({ statusCode: 404 }))
+    await mw.handle(event, next as any)
+    expect(telemetry.span.setAttribute).toHaveBeenCalledWith('statusCode', 404)
+    expect(telemetry.span.end).toHaveBeenCalledWith('ok')
+    expect(telemetry.counter).toHaveBeenCalledWith('stone.events.total', 1, { status: 'ok' })
+  })
+
   it('does not set a status code when the response has none', async () => {
     const telemetry = makeTelemetry()
     const mw = new TelemetryMiddleware({ telemetry })
